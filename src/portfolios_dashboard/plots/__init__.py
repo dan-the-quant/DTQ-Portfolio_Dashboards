@@ -1,0 +1,2 @@
+from src.portfolios_dashboard.plots.time_series_plot import TimeSeriesPlot
+from src.portfolios_dashboard.plots.time_series_plot import CandlesticksPlot
