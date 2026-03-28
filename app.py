@@ -426,7 +426,7 @@ st.set_page_config(
 
 with st.sidebar:
 
-    st.image(r"config\DTQ_logo.png", use_container_width=True)
+    st.image(r"config/DTQ_logo.png", use_container_width=True)
 
     st.header("Portfolios Dashboard")
 
