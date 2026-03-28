@@ -12,17 +12,18 @@ from plotly.subplots import make_subplots
 @st.cache_resource
 def TimeSeriesPlot(
         data,
-        title: str = "Time Series"
+        title: str = "Time Series",
+        height: int = 500,
 ):
     if isinstance(data, pd.Series):
         df = data.to_frame(name=data.name or "Value")
     else:
         df = data.copy()
 
-    # Create Plot
     fig = go.Figure()
 
     for col in df.columns:
+
         fig.add_trace(
             go.Scatter(
                 x=df.index,
@@ -35,11 +36,14 @@ def TimeSeriesPlot(
     fig.update_layout(
         title=title,
         xaxis_title="Date",
-        yaxis_title="Value"
-    )
-
-    fig.update_layout(
-        height=400
+        yaxis_title="Value",
+        height=height,
+        legend=dict(
+            yanchor="top", y=0.99,
+            xanchor="left", x=0.01,
+            bgcolor="rgba(255,255,255,0.7)",
+            borderwidth=0,
+        )
     )
 
     return fig
