@@ -46,7 +46,7 @@ from src.portfolios_dashboard.risk_measures import (
 # =============================================================================
 
 BENCHMARKS = {
-    "S&P 500 ETF (SPY)": "SPY",
+    #"S&P 500 ETF (SPY)": "SPY",
     "S&P 500 Index (^GSPC)": "^GSPC",
     "MSCI World (URTH)": "URTH",
     "MSCI Emerging Markets (EEM)": "EEM",
