@@ -8,15 +8,17 @@ import yfinance as yf
 # Streamlit
 import streamlit as st
 
+
 # Calculate Logarithmic Returns
+@st.cache_data
 def log_returns(
         price_series: pd.Series
 ):
     return np.log(price_series / price_series.shift(1))
 
 
-@st.cache_data
 # Function to import data
+@st.cache_data
 def import_prices_data(
         tickers: str | list,
         start_date: str = '1999-01-01',
@@ -37,4 +39,3 @@ def import_prices_data(
     price_data = data.loc[:, price]
 
     return price_data
-
