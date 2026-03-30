@@ -50,7 +50,7 @@ SAMPLE_PORTFOLIOS = {
     "Equal-Weight":                  r"config/equal_weighted_portfolio.csv",
     "Mean-Variance":                 r"config/mean_variance_portfolio.csv",
     "Momentum":                      r"config/momentum_portfolio.csv",
-    "Zero-Beta":                     r"config/zero_beta_portfolio.csv",
+    #"Zero-Beta":                     r"config/zero_beta_portfolio.csv",
 }
 
 BENCHMARKS = {
@@ -257,7 +257,7 @@ def render_overview(df: pd.DataFrame, benchmark_returns: pd.Series, rfr_series: 
         bm_series = benchmark_returns.reindex(df.index).dropna()
 
         ann_return = portfolio_series.mul(100).mean() * TRADING_DAYS
-        daily_std = portfolio_series.mul(100).std()
+        ann_std = portfolio_series.mul(100).std() * np.sqrt(TRADING_DAYS)
         daily_var = portfolio_series.mul(100).var()
         te = tracking_error(portfolio_series.mul(100), bm_series.mul(100))
         sharpe = sharpe_ratio(df[[return_col]])
@@ -268,8 +268,8 @@ def render_overview(df: pd.DataFrame, benchmark_returns: pd.Series, rfr_series: 
 
         c1, c2, c3 = st.columns(3)
 
-        c1.metric("Ann. Return", f"{ann_return:.2f}%")
-        c1.metric("Daily Std Dev", f"{daily_std:.4f}%")
+        c1.metric("Ann. Return", f"{ann_return:.3f}%")
+        c1.metric("Ann Volatility", f"{ann_std:.3f}%")
         c1.metric("Daily Variance", f"{daily_var:.6f}")
 
         c2.metric("Sharpe Ratio", f"{sharpe:.4f}x")

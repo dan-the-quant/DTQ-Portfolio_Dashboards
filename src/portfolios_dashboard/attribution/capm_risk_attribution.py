@@ -33,6 +33,6 @@ def capm_risk_attribution(
     result_df = pd.DataFrame({
         'variance': [total_variance, systematic_variance, idio_variance],
         'percentage': [1.000, systematic_variance / total_variance, idio_variance / total_variance]
-    }, index=['total_variance', 'systematic_variance', 'idio_variance'])
+    }, index=['Total', 'Systematic', 'Idiosyncratic'])
 
     return result_df
