@@ -47,7 +47,7 @@ from src.portfolios_dashboard.risk_measures import (
 SAMPLE_PORTFOLIOS = {
     "— Select a sample portfolio —": None,
     "Betting-Against-Beta":          r"config/betting_against_beta_portfolio.csv",
-    "Equal-Weight":                  r"config/equal_weighted_portfolio.csv",
+    "Equal-Weighted":                  r"config/equal_weighted_portfolio.csv",
     "Mean-Variance":                 r"config/mean_variance_portfolio.csv",
     "Momentum":                      r"config/momentum_portfolio.csv",
     #"Zero-Beta":                     r"config/zero_beta_portfolio.csv",
@@ -251,7 +251,7 @@ def render_overview(df: pd.DataFrame, benchmark_returns: pd.Series, rfr_series: 
         )
 
         # ── Risk Metrics ─────────────────────────────────────────────────────
-        st.markdown("#### Risk Metrics")
+        st.markdown("#### Risk and Performance Metrics")
 
         portfolio_series = df[return_col]
         bm_series = benchmark_returns.reindex(df.index).dropna()
@@ -269,7 +269,7 @@ def render_overview(df: pd.DataFrame, benchmark_returns: pd.Series, rfr_series: 
         c1, c2, c3 = st.columns(3)
 
         c1.metric("Ann. Return", f"{ann_return:.3f}%")
-        c1.metric("Ann Volatility", f"{ann_std:.3f}%")
+        c1.metric("Ann. Volatility", f"{ann_std:.3f}%")
         c1.metric("Daily Variance", f"{daily_var:.6f}")
 
         c2.metric("Sharpe Ratio", f"{sharpe:.4f}x")
@@ -277,7 +277,7 @@ def render_overview(df: pd.DataFrame, benchmark_returns: pd.Series, rfr_series: 
         c2.metric("Expected Shortfall", f"{es:.2%}")
 
         c3.metric("Tracking Error", f"{te:.4f}%")
-        c3.metric("Max Drawdown", f"{md:.2%}")
+        c3.metric("Max. Drawdown", f"{md:.2%}")
         c3.metric("Cond. Exp. Drawdown", f"{ced:.2%}")
 
 
@@ -320,7 +320,7 @@ def render_attribution(df: pd.DataFrame, benchmark_returns: pd.Series, rfr_serie
         benchmark_returns,
         rfr_series,
     )
-    capm_risk["volatility"] = np.sqrt(capm_risk["variance"])
+    capm_risk["ann_volatility"] = np.sqrt(capm_risk["variance"]) * np.sqrt(252) / 100
 
     col_left, _, col_right = st.columns([4.5, 1, 4.5])
 
@@ -347,14 +347,13 @@ def render_attribution(df: pd.DataFrame, benchmark_returns: pd.Series, rfr_serie
             .format({
                 "variance": "{:.6f}",
                 "percentage": "{:.2%}",
-                "volatility": "{:.6f}",
-            })
-            .bar(subset=["percentage"], color="#378ADD", vmin=0, vmax=1),
+                "ann_volatility": "{:.2%}",
+            }),
             use_container_width=True,
             column_config={
                 "variance": st.column_config.NumberColumn("Variance"),
                 "percentage": st.column_config.NumberColumn("Weight"),
-                "volatility": st.column_config.NumberColumn("Volatility"),
+                "ann_volatility": st.column_config.NumberColumn("Ann. Volatility"),
             },
         )
 
@@ -381,6 +380,11 @@ def render_attribution(df: pd.DataFrame, benchmark_returns: pd.Series, rfr_serie
 
 def page_portfolio_attribution():
     st.header("Portfolio Attribution")
+
+    st.caption(
+        "Verify your strategy or check one of ours. What part of the returns comes from exposure to the market vs. "
+        "specific risk."
+    )
 
     # ── 1. Uploader ───────────────────────────────────────────────────────────
     uploaded_file, benchmark_label, rfr_label = render_data_uploader()
