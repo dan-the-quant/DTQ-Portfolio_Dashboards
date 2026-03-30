@@ -40,13 +40,21 @@ from src.portfolios_dashboard.risk_measures import (
     tracking_error,
 )
 
-
 # =============================================================================
 # CONSTANTS
 # =============================================================================
 
+SAMPLE_PORTFOLIOS = {
+    "— Select a sample portfolio —": None,
+    "Betting-Against-Beta":          r"config/betting_against_beta_portfolio.csv",
+    "Equal-Weight":                  r"config/equal_weighted_portfolio.csv",
+    "Mean-Variance":                 r"config/mean_variance_portfolio.csv",
+    "Momentum":                      r"config/momentum_portfolio.csv",
+    "Zero-Beta":                     r"config/zero_beta_portfolio.csv",
+}
+
 BENCHMARKS = {
-    #"S&P 500 ETF (SPY)": "SPY",
+    # "S&P 500 ETF (SPY)": "SPY",
     "S&P 500 Index (^GSPC)": "^GSPC",
     "MSCI World (URTH)": "URTH",
     "MSCI Emerging Markets (EEM)": "EEM",
@@ -163,10 +171,29 @@ def render_data_uploader():
     col_file, col_bench, col_rfr = st.columns([5, 2.5, 2.5])
 
     with col_file:
-        uploaded_file = st.file_uploader(
-            "Upload your time series file",
-            type=["csv", "xlsx", "xls", "parquet", "json", "txt"],
+        source = st.radio(
+            "Data source",
+            options=["Upload my own portfolio", "Use a sample portfolio"],
+            horizontal=True,
         )
+
+        if source == "Upload my own portfolio":
+            uploaded_file = st.file_uploader(
+                "Upload your time series file",
+                type=["csv", "xlsx", "xls", "parquet", "json", "txt"],
+            )
+
+        else:
+            sample_label = st.selectbox(
+                "Select a sample portfolio",
+                options=list(SAMPLE_PORTFOLIOS.keys()),
+            )
+            sample_path = SAMPLE_PORTFOLIOS[sample_label]
+
+            if sample_path:
+                uploaded_file = open(sample_path, "rb")
+            else:
+                uploaded_file = None
 
     with col_bench:
         benchmark_label = st.selectbox("Select a Benchmark", options=list(BENCHMARKS.keys()))
@@ -200,7 +227,6 @@ def render_overview(df: pd.DataFrame, benchmark_returns: pd.Series, rfr_series: 
 
     # ── Right column: market data + risk metrics ─────────────────────────────
     with col_right:
-
         # Align benchmark and RFR to portfolio dates
         market_data = pd.concat([benchmark_returns, rfr_series], axis=1)
         market_data.columns = [benchmark_label, rfr_label]
@@ -226,33 +252,33 @@ def render_overview(df: pd.DataFrame, benchmark_returns: pd.Series, rfr_series: 
         portfolio_series = df[return_col]
         bm_series = benchmark_returns.reindex(df.index).dropna()
 
-        ann_return  = portfolio_series.mul(100).mean() * TRADING_DAYS
-        daily_std   = portfolio_series.mul(100).std()
-        daily_var   = portfolio_series.mul(100).var()
-        te          = tracking_error(portfolio_series.mul(100), bm_series.mul(100))
-        sharpe      = sharpe_ratio(df[[return_col]])
-        var_95      = value_at_risk(df[[return_col]])
-        es          = expected_shortfall(df[[return_col]])
-        md          = max_drawdown(df[[return_col]])
-        ced         = conditional_expected_drawdown(df[[return_col]])
+        ann_return = portfolio_series.mul(100).mean() * TRADING_DAYS
+        daily_std = portfolio_series.mul(100).std()
+        daily_var = portfolio_series.mul(100).var()
+        te = tracking_error(portfolio_series.mul(100), bm_series.mul(100))
+        sharpe = sharpe_ratio(df[[return_col]])
+        var_95 = value_at_risk(df[[return_col]])
+        es = expected_shortfall(df[[return_col]])
+        md = max_drawdown(df[[return_col]])
+        ced = conditional_expected_drawdown(df[[return_col]])
 
         c1, c2, c3 = st.columns(3)
 
-        c1.metric("Ann. Return",        f"{ann_return:.2f}%")
-        c1.metric("Daily Std Dev",      f"{daily_std:.4f}%")
-        c1.metric("Daily Variance",     f"{daily_var:.6f}")
+        c1.metric("Ann. Return", f"{ann_return:.2f}%")
+        c1.metric("Daily Std Dev", f"{daily_std:.4f}%")
+        c1.metric("Daily Variance", f"{daily_var:.6f}")
 
-        c2.metric("Sharpe Ratio",       f"{sharpe:.4f}x")
-        c2.metric("VaR (95%)",          f"{var_95:.2%}")
+        c2.metric("Sharpe Ratio", f"{sharpe:.4f}x")
+        c2.metric("VaR (95%)", f"{var_95:.2%}")
         c2.metric("Expected Shortfall", f"{es:.2%}")
 
-        c3.metric("Tracking Error",     f"{te:.4f}%")
-        c3.metric("Max Drawdown",       f"{md:.2%}")
-        c3.metric("Cond. Exp. Drawdown",f"{ced:.2%}")
+        c3.metric("Tracking Error", f"{te:.4f}%")
+        c3.metric("Max Drawdown", f"{md:.2%}")
+        c3.metric("Cond. Exp. Drawdown", f"{ced:.2%}")
 
 
 def render_attribution(df: pd.DataFrame, benchmark_returns: pd.Series, rfr_series: pd.Series,
-                        benchmark_ticker: str, return_col: str):
+                       benchmark_ticker: str, return_col: str):
     """Render the Attribution section: rolling CAPM coefficients and factor decomposition."""
 
     st.markdown("---")
@@ -384,7 +410,7 @@ def page_portfolio_attribution():
 
     # ── 4. Download market data ───────────────────────────────────────────────
     benchmark_ticker = BENCHMARKS[benchmark_label]
-    rfr_ticker       = RISK_FREE_RATES[rfr_label]
+    rfr_ticker = RISK_FREE_RATES[rfr_label]
 
     benchmark_returns = get_benchmark_returns(
         benchmark_ticker,
@@ -425,7 +451,6 @@ st.set_page_config(
 )
 
 with st.sidebar:
-
     st.image(r"config/DTQ_logo.png", use_container_width=True)
 
     st.header("Portfolios Dashboard")
