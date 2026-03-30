@@ -260,7 +260,7 @@ def render_overview(df: pd.DataFrame, benchmark_returns: pd.Series, rfr_series: 
         ann_std = portfolio_series.mul(100).std() * np.sqrt(TRADING_DAYS)
         daily_var = portfolio_series.mul(100).var()
         te = tracking_error(portfolio_series.mul(100), bm_series.mul(100))
-        sharpe = sharpe_ratio(df[[return_col]])
+        sharpe = sharpe_ratio(df[[return_col]]) * np.sqrt(TRADING_DAYS)
         var_95 = value_at_risk(df[[return_col]])
         es = expected_shortfall(df[[return_col]])
         md = max_drawdown(df[[return_col]])
@@ -321,7 +321,7 @@ def render_attribution(df: pd.DataFrame, benchmark_returns: pd.Series, rfr_serie
         benchmark_returns,
         rfr_series,
     )
-    capm_risk["ann_volatility"] = np.sqrt(capm_risk["variance"]) * np.sqrt(252) / 100
+    capm_risk["ann_volatility"] = np.sqrt(capm_risk["variance"]) * np.sqrt(TRADING_DAYS) / 100
 
     col_left, _, col_right = st.columns([4.5, 1, 4.5])
 
