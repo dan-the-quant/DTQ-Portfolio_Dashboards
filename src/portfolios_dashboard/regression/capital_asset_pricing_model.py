@@ -1,5 +1,6 @@
 # Libraries
 import pandas as pd
+import numpy as np
 import streamlit
 
 # Modules
@@ -9,7 +10,6 @@ from src.portfolios_dashboard.regression.linear_regression_model import linear_r
 
 
 # CAPM Coefficients
-@streamlit.cache_data
 def capm_coefficients(
         asset_returns,
         benchmark_returns,
@@ -72,41 +72,60 @@ def rolling_capm_coefficients(
         weighted=True,
         half_life=None,
 ):
-    dates = asset_returns.index[window - 1:]
+    # Common index
+    common_index = (
+        asset_returns.dropna().index
+        .intersection(benchmark_returns.dropna().index)
+        .intersection(risk_free_rate.dropna().index)
+    )
 
-    results = {}
+    asset     = asset_returns.loc[common_index].values
+    benchmark = benchmark_returns.loc[common_index].values
+    rfr       = risk_free_rate.loc[common_index].values
+    dates     = common_index[window - 1:]
+    n_windows = len(dates)
+    n         = len(common_index)
 
-    for date in dates:
-        asset_window = asset_returns.loc[:date].iloc[-window:]
-        benchmark_window = benchmark_returns.loc[:date].iloc[-window:]
-        rfr_window = risk_free_rate.loc[:date].iloc[-window:]
+    # Weights
+    if weighted:
+        hl = half_life if half_life is not None else window / 2
+        w = window * wexp(window, hl)  # shape (window,)
+        sqrt_w = np.sqrt(w)
+    else:
+        sqrt_w = np.ones(window)
 
-        try:
-            coeffs = capm_coefficients(
-                asset_returns=asset_window,
-                benchmark_returns=benchmark_window,
-                risk_free_rate=rfr_window,
-                coefficient='all',
-                weighted=weighted,
-                half_life=half_life,
-            )
+    alphas = np.full(n_windows, np.nan)
+    betas  = np.full(n_windows, np.nan)
+    sigmas = np.full(n_windows, np.nan)
 
-            for name in coeffs.index:
-                if name not in results:
-                    results[name] = []
-                row = coeffs.loc[name]
-                row.name = date
-                results[name].append(row)
+    for i in range(n_windows):
+        a  = asset    [i: i + window]
+        bm = benchmark[i: i + window]
+        rf = rfr      [i: i + window]
 
-        except Exception as e:
-            print(f"Fail on {date}: {e}")
-            continue
+        y = (a - rf).reshape(-1, 1)
+        x = np.column_stack([np.ones(window), bm - rf])
 
-    all_coeffs = {name: pd.DataFrame(rows) for name, rows in results.items()}
+        # Apply weights
+        x_w = x * sqrt_w[:, None]
+        y_w = y * sqrt_w[:, None]
+
+        coef, _, _, _ = np.linalg.lstsq(x_w.T @ x_w, x_w.T @ y_w, rcond=None)
+
+        alphas[i] = coef[0, 0]
+        betas [i] = coef[1, 0]
+
+        resid      = y - x @ coef
+        sigmas[i]  = np.std(resid)
+
+    result = pd.DataFrame(
+        {"alpha": alphas, "beta": betas, "sigma": sigmas},
+        index=dates,
+    )
 
     if coefficient == 'all':
-        return all_coeffs
-    elif coefficient in all_coeffs:
-        return all_coeffs[coefficient]
+        return {"alpha": result[["alpha"]], "beta": result[["beta"]], "sigma": result[["sigma"]]}
+    elif coefficient in result.columns:
+        return result[[coefficient]]
     else:
-        raise ValueError('coefficient argument must be one of: ["alpha", "beta", "sigma", "all"]')
+        raise ValueError('coefficient must be one of: ["alpha", "beta", "sigma", "all"]')
