@@ -294,6 +294,7 @@ def render_attribution(df: pd.DataFrame, benchmark_returns: pd.Series, rfr_serie
         coef = st.selectbox(
             "Select a Coefficient to plot",
             options=["Alpha", "Beta", "Sigma"],
+            index=1
         )
 
     with col_window:
