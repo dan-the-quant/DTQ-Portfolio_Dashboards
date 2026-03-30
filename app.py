@@ -103,7 +103,7 @@ def get_benchmark_returns(ticker: str, start_date, end_date) -> pd.Series:
     if isinstance(returns, pd.DataFrame):
         returns = returns.squeeze()
 
-    returns.index = pd.to_datetime(returns.index)
+    returns.index = returns.index.tz_convert(None) if returns.index.tz is not None else returns.index
     return returns
 
 
@@ -122,7 +122,7 @@ def get_risk_free_rate(ticker: str, start_date, end_date) -> pd.Series:
     if isinstance(daily_rate, pd.DataFrame):
         daily_rate = daily_rate.squeeze()
 
-    daily_rate.index = pd.to_datetime(daily_rate.index)
+    daily_rate.index = daily_rate.index.tz_convert(None) if daily_rate.index.tz is not None else daily_rate.index
     return daily_rate
 
 
