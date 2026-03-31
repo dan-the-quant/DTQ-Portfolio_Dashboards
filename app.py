@@ -456,6 +456,7 @@ def page_multifactor_attribution():
 
 st.set_page_config(
     page_title="DTQ Attribution Dashboard",
+    page_icon="config/DTQ_logo.png",
     layout="wide",
 )
 
