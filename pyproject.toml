@@ -27,3 +27,7 @@ license = {text = "MIT"}
 
 [tool.pdm]
 distribution = false
+
+[server]
+enableCORS = false
+enableXsrfProtection = false
