@@ -11,12 +11,10 @@ import streamlit as st
 from streamlit_option_menu import option_menu
 
 # Data
-from src.portfolios_dashboard.data import (
-    load_file,
-    parse_dataframe,
-    import_prices_data,
-    log_returns,
-)
+from src.portfolios_dashboard.data import load_file
+from src.portfolios_dashboard.data import parse_dataframe
+from src.portfolios_dashboard.data import import_prices_data
+from src.portfolios_dashboard.data import log_returns
 
 # Plots
 from src.portfolios_dashboard.plots import TimeSeriesPlot
@@ -25,10 +23,8 @@ from src.portfolios_dashboard.plots import TimeSeriesPlot
 from src.portfolios_dashboard.regression import rolling_capm_coefficients
 
 # Attribution
-from src.portfolios_dashboard.attribution import (
-    factor_contribution,
-    capm_risk_attribution,
-)
+from src.portfolios_dashboard.attribution import factor_contribution
+from src.portfolios_dashboard.attribution import capm_risk_attribution
 
 # Risk metrics
 from src.portfolios_dashboard.risk_measures import (
