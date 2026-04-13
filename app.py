@@ -285,7 +285,7 @@ def render_overview(df: pd.DataFrame, benchmark_returns: pd.Series, rfr_series: 
         )
         st.dataframe(
             market_data.style.format("{:.6f}"),
-            height=340,
+            height=330,
             use_container_width=True,
         )
 
