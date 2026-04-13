@@ -10,6 +10,7 @@ import numpy as np
 import streamlit as st
 from streamlit_option_menu import option_menu
 from PIL import Image
+from pathlib import Path
 import re
 
 # Data
@@ -46,12 +47,15 @@ from src.portfolios_dashboard.risk_measures import (
 # CONSTANTS
 # =============================================================================
 
+BASE_DIR = Path(__file__).parent
+
+# Absolute Paths
 SAMPLE_PORTFOLIOS = {
     "— Select a sample portfolio —": None,
-    "Betting-Against-Beta":          r"config/betting_against_beta_portfolio.csv",
-    "Equal-Weighted":                r"config/equal_weighted_portfolio.csv",
-    "Mean-Variance":                 r"config/mean_variance_portfolio.csv",
-    "Momentum":                      r"config/momentum_portfolio.csv",
+    "Betting-Against-Beta": BASE_DIR / "config/betting_against_beta_portfolio.csv",
+    "Equal-Weighted":        BASE_DIR / "config/equal_weighted_portfolio.csv",
+    "Mean-Variance":         BASE_DIR / "config/mean_variance_portfolio.csv",
+    "Momentum":              BASE_DIR / "config/momentum_portfolio.csv",
 }
 
 BENCHMARKS = {
