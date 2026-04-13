@@ -42,11 +42,11 @@ from src.portfolios_dashboard.risk_measures import (
 
 SAMPLE_PORTFOLIOS = {
     "— Select a sample portfolio —": None,
-    "Betting-Against-Beta":          r"config/betting_against_beta_portfolio.csv",
-    "Equal-Weighted":                  r"config/equal_weighted_portfolio.csv",
-    "Mean-Variance":                 r"config/mean_variance_portfolio.csv",
-    "Momentum":                      r"config/momentum_portfolio.csv",
-    #"Zero-Beta":                     r"config/zero_beta_portfolio.csv",
+    "Betting-Against-Beta": r"config/betting_against_beta_portfolio.csv",
+    "Equal-Weighted": r"config/equal_weighted_portfolio.csv",
+    "Mean-Variance": r"config/mean_variance_portfolio.csv",
+    "Momentum": r"config/momentum_portfolio.csv",
+    # "Zero-Beta":                     r"config/zero_beta_portfolio.csv",
 }
 
 BENCHMARKS = {
