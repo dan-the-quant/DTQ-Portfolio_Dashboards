@@ -67,8 +67,7 @@ def parse_dataframe(df: pd.DataFrame) -> pd.DataFrame | None:
     date_col = None
     for col in df.columns:
         try:
-            parsed = pd.to_datetime(df[col], infer_datetime_format=True)
-            date_col = col
+            parsed = pd.to_datetime(df[col])
             df[col] = parsed
             break
         except Exception:
