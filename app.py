@@ -46,7 +46,6 @@ SAMPLE_PORTFOLIOS = {
     "Equal-Weighted": r"config/equal_weighted_portfolio.csv",
     "Mean-Variance": r"config/mean_variance_portfolio.csv",
     "Momentum": r"config/momentum_portfolio.csv",
-    # "Zero-Beta":                     r"config/zero_beta_portfolio.csv",
 }
 
 BENCHMARKS = {
