@@ -6,6 +6,10 @@ import streamlit as st
 # Load Files
 @st.cache_data
 def load_file(uploaded_file) -> pd.DataFrame | None:
+    """
+    Reads an uploaded file regardless of format.
+    Expects two columns: one for dates and one for returns.
+    """
     name = uploaded_file.name.lower()
 
     try:
@@ -48,16 +52,22 @@ def load_file(uploaded_file) -> pd.DataFrame | None:
         return None
 
 
+# Parse DF Function
 @st.cache_data
 def parse_dataframe(df: pd.DataFrame) -> pd.DataFrame | None:
+    """
+    Automatically identifies the date column and the returns column,
+    regardless of their names.
+    """
     if df.shape[1] < 2:
         st.error("The file must have at least 2 columns: dates and returns.")
         return None
 
+    # --- Identify date column ---
     date_col = None
     for col in df.columns:
         try:
-            parsed = pd.to_datetime(df[col])
+            parsed = pd.to_datetime(df[col], infer_datetime_format=True)
             date_col = col
             df[col] = parsed
             break
@@ -68,6 +78,7 @@ def parse_dataframe(df: pd.DataFrame) -> pd.DataFrame | None:
         st.error("No valid date column found.")
         return None
 
+    # --- Identify returns column (first numeric column that is not dates) ---
     return_col = None
     for col in df.columns:
         if col == date_col:
@@ -83,6 +94,7 @@ def parse_dataframe(df: pd.DataFrame) -> pd.DataFrame | None:
         st.error("No numeric returns column found.")
         return None
 
+    # --- Build clean DataFrame ---
     result = df[[date_col, return_col]].rename(
         columns={date_col: "date", return_col: "return"}
     )
