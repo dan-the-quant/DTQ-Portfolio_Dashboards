@@ -197,7 +197,7 @@ def render_data_uploader():
             sample_path = SAMPLE_PORTFOLIOS[sample_label]
 
             if sample_path:
-                uploaded_file = open(sample_path, "rb")
+                uploaded_file = open(str(sample_path), "rb")
             else:
                 uploaded_file = None
 
@@ -289,7 +289,7 @@ def render_overview(df: pd.DataFrame, benchmark_returns: pd.Series, rfr_series: 
         )
         st.dataframe(
             market_data.style.format("{:.6f}"),
-            height=350,
+            height=340,
             use_container_width=True,
         )
 
