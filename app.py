@@ -52,7 +52,6 @@ SAMPLE_PORTFOLIOS = {
     "Equal-Weighted":                r"config/equal_weighted_portfolio.csv",
     "Mean-Variance":                 r"config/mean_variance_portfolio.csv",
     "Momentum":                      r"config/momentum_portfolio.csv",
-    # "Zero-Beta":                    r"config/zero_beta_portfolio.csv",
 }
 
 BENCHMARKS = {
@@ -182,6 +181,7 @@ def render_data_uploader():
             uploaded_file = st.file_uploader(
                 "Upload your time series file",
                 type=["csv", "xlsx", "xls", "parquet", "json", "txt"],
+                label_visibility="collapsed",
             )
 
         else:
