@@ -457,7 +457,7 @@ def page_portfolio_attribution():
     uploaded_file, benchmark_label, rfr_label = render_data_uploader()
 
     if not uploaded_file:
-        st.info("👆 Upload a returns file above to get started.")
+        st.info("👆 Upload a returns file or select a sample portfolio above to get started.")
         return
 
     df_raw = load_file(uploaded_file)
