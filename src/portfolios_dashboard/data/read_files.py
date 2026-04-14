@@ -101,5 +101,6 @@ def parse_dataframe(df: pd.DataFrame) -> pd.DataFrame | None:
     result = result.dropna().sort_values("date").reset_index(drop=True)
     result = result.set_index("date")
     result.index = pd.to_datetime(result.index)
+    result.index = result.index.tz_localize(None) if result.index.tz is not None else result.index
 
     return result
