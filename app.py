@@ -179,9 +179,9 @@ def render_data_uploader():
 
         if source == "Upload my own portfolio":
             uploaded_file = st.file_uploader(
-                "Upload your time series file",
+                label="Upload your time series file",
                 type=["csv", "xlsx", "xls", "parquet", "json", "txt"],
-                label_visibility="collapsed",
+                label_visibility="visible",
             )
 
         else:
