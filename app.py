@@ -1,5 +1,5 @@
 # =============================================================================
-# Attribution Dashboard
+# Attribution Dashboard — Narrative-first layout (alt.py)
 # Author: Edgar Alcántara & Daniel R. Barrera
 # =============================================================================
 
@@ -30,6 +30,7 @@ from src.portfolios_dashboard.risk_measures import (
     tracking_error,
 )
 
+
 # =============================================================================
 # CONSTANTS
 # =============================================================================
@@ -37,43 +38,69 @@ from src.portfolios_dashboard.risk_measures import (
 SAMPLE_PORTFOLIOS = {
     "— Select a sample portfolio —": None,
     "Betting-Against-Beta": r"config/betting_against_beta_portfolio.csv",
-    "Equal-Weighted": r"config/equal_weighted_portfolio.csv",
-    "Mean-Variance": r"config/mean_variance_portfolio.csv",
-    "Momentum": r"config/momentum_portfolio.csv",
+    "Equal-Weighted":        r"config/equal_weighted_portfolio.csv",
+    "Mean-Variance":         r"config/mean_variance_portfolio.csv",
+    "Momentum":              r"config/momentum_portfolio.csv",
 }
 
+PORTFOLIO_DESCRIPTIONS = {
+    "Betting-Against-Beta": (
+        "**Betting-Against-Beta (BAB)** goes long low-beta stocks and short high-beta stocks, "
+        "exploiting the tendency of lower-risk assets to outperform on a risk-adjusted basis. "
+        "Developed by Frazzini & Pedersen (2014), it profits when investors over-leverage "
+        "high-beta assets and underprice low-beta ones."
+    ),
+    "Equal-Weighted": (
+        "**Equal-Weighted** allocates the same dollar amount to every asset in the universe, "
+        "rebalancing periodically. It captures the size premium by overweighting smaller stocks "
+        "relative to market-cap weighting, at the cost of higher turnover."
+    ),
+    "Mean-Variance": (
+        "**Mean-Variance** (Markowitz, 1952) selects weights that maximize expected return "
+        "for a given level of volatility. It sits on the efficient frontier and is sensitive "
+        "to input estimates."
+    ),
+    "Momentum": (
+        "**Momentum** buys recent winners and sells recent losers, based on the observation "
+        "that assets trending upward over the past 3–12 months tend to continue doing so. "
+        "It is one of the most robust cross-sectional anomalies in the literature."
+    ),
+}
+
+UPLOAD_SAMPLE_PATH = r"config/zero_beta_portfolio.csv"
+
 BENCHMARKS = {
-    "S&P 500 ETF (SPY)": "SPY",
-    "S&P 500 Index (^GSPC)": "^GSPC",
-    "MSCI World (URTH)": "URTH",
+    "S&P 500 ETF (SPY)":           "SPY",
+    "S&P 500 Index (^GSPC)":       "^GSPC",
+    "MSCI World (URTH)":           "URTH",
     "MSCI Emerging Markets (EEM)": "EEM",
-    "Total Stock Market (VTI)": "VTI",
-    "MSCI ACWI (ACWI)": "ACWI",
-    "Russell 2000 (^RUT)": "^RUT",
-    "Dow Jones (^DJI)": "^DJI",
-    "NASDAQ 100 (^NDX)": "^NDX",
+    "Total Stock Market (VTI)":    "VTI",
+    "MSCI ACWI (ACWI)":            "ACWI",
+    "Russell 2000 (^RUT)":         "^RUT",
+    "Dow Jones (^DJI)":            "^DJI",
+    "NASDAQ 100 (^NDX)":           "^NDX",
 }
 
 RISK_FREE_RATES = {
     "US Treasury 3 Months (^IRX)": "^IRX",
-    "US Treasury 5 Years (^FVX)": "^FVX",
+    "US Treasury 5 Years (^FVX)":  "^FVX",
     "US Treasury 10 Years (^TNX)": "^TNX",
     "US Treasury 30 Years (^TYX)": "^TYX",
 }
 
 ROLLING_WINDOWS = {
-    "1 Year (252)": 252,
+    "1 Year (252)":  252,
     "2 Years (504)": 504,
     "3 Years (756)": 756,
-    "4 Years (1008)": 1008,
-    "5 Years (1260)": 1260,
+    "4 Years (1008)":1008,
+    "5 Years (1260)":1260,
 }
 
 TRADING_DAYS = 252
 
 
 # =============================================================================
-# CACHED DATA LOADERS
+# CACHED DATA LOADERS  (unchanged from app.py)
 # =============================================================================
 
 @st.cache_data(show_spinner="Downloading benchmark data...")
@@ -131,94 +158,32 @@ def get_return_column(df: pd.DataFrame) -> str | None:
     return numeric_cols[0] if numeric_cols else None
 
 
-def section_label(text: str):
+def section_tag(text: str):
+    """Small uppercase label — used as section eyebrow."""
     st.markdown(
-        f"<p style='font-size:10px;font-weight:700;letter-spacing:0.1em;"
-        f"color:#111440;opacity:0.45;text-transform:uppercase;margin-bottom:8px'>{text}</p>",
+        f"<p style='font-size:20px;font-weight:700;letter-spacing:0.12em;"
+        f"color:#111440;opacity:0.4;text-transform:uppercase;margin:0 0 6px'>{text}</p>",
         unsafe_allow_html=True,
     )
 
 
 def divider():
     st.markdown(
-        "<hr style='border:none;border-top:1px solid #e5e7ef;margin:1.5rem 0'>",
+        "<hr style='border:none;border-top:1px solid #e5e7ef;margin:2rem 0'>",
         unsafe_allow_html=True,
     )
 
 
 # =============================================================================
-# HERO: PLAIN-ENGLISH PERFORMANCE SUMMARY
+# SIDEBAR CONTROLS
 # =============================================================================
 
-def render_hero_summary(df, capm_risk, capm_df, return_col, benchmark_label, portfolio_label):
-    """Lead with the answer — one sentence that explains performance."""
-
-    portfolio_series = df[return_col]
-    ann_return = portfolio_series.mul(100).mean() * TRADING_DAYS
-
-    try:
-        sys_pct = capm_risk.loc["Systematic", "percentage"] * 100
-        idio_pct = capm_risk.loc["Idiosyncratic", "percentage"] * 100
-    except KeyError:
-        display = capm_risk.copy()
-        display.index = display.index.str.replace("_", " ").str.title()
-        sys_pct = display.iloc[1]["percentage"] * 100
-        idio_pct = display.iloc[2]["percentage"] * 100
-
-    alpha_mean = capm_df["alpha"].mean()
-    beta_last = capm_df["beta"].iloc[-1]
-    beta_mean = capm_df["beta"].mean()
-
-    alpha_tag = "Positive alpha" if alpha_mean > 0 else "Negative alpha"
-    alpha_color = "#5DCAA5" if alpha_mean > 0 else "#F09595"
-
-    if beta_last < beta_mean - 0.2:
-        posture = "more defensive than its historical average"
-    elif beta_last > beta_mean + 0.2:
-        posture = "more aggressive than its historical average"
-    else:
-        posture = "in line with its historical average"
-
-    date_range = f"{df.index.min().date()} – {df.index.max().date()}"
-
-    summary_html = f"""
-    <div style='background:#111440;border-radius:12px;padding:20px 24px;margin-bottom:20px;
-                display:flex;align-items:flex-start;justify-content:space-between;gap:20px'>
-        <div style='flex:1'>
-            <p style='font-size:10px;font-weight:700;letter-spacing:0.1em;
-                      color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:8px'>
-                Performance summary &nbsp;·&nbsp; {portfolio_label} &nbsp;·&nbsp; {date_range}
-            </p>
-            <p style='font-size:16px;font-weight:600;color:#fff;line-height:1.6;margin:0'>
-                This portfolio earned <span style='color:#7EC8C8'>{ann_return:.2f}% annualized</span>
-                — of which <strong style='color:#fff'>{sys_pct:.1f}% came from broad market exposure</strong>
-                and <strong style='color:#fff'>{idio_pct:.1f}% from strategy-specific decisions.</strong>
-                Current market sensitivity is <span style='color:#7EC8C8'>{posture}</span>.
-            </p>
-        </div>
-        <div style='text-align:right;flex-shrink:0'>
-            <div style='font-size:28px;font-weight:700;color:#fff'>{ann_return:.2f}%</div>
-            <div style='font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;
-                        letter-spacing:0.06em;margin-top:2px'>Annualized return</div>
-            <div style='margin-top:10px;display:inline-block;padding:3px 10px;border-radius:20px;
-                        background:rgba(255,255,255,0.1);
-                        font-size:11px;font-weight:600;color:{alpha_color}'>
-                {alpha_tag}
-            </div>
-        </div>
-    </div>
-    """
-    st.markdown(summary_html, unsafe_allow_html=True)
-
-
-# =============================================================================
-# SECTION: DATA CONTROLS  →  now rendered inside st.sidebar
-# =============================================================================
-
-def render_data_controls():
-    """All portfolio controls live in the sidebar."""
+def render_sidebar():
     with st.sidebar:
-        st.image("config/DTQ_logo.png", use_container_width=True)
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            st.image("config/DTQ_logo.png", use_container_width=True)
+        st.markdown("<div style='margin-bottom:20px'></div>", unsafe_allow_html=True)
 
         st.markdown(
             "<p style='font-size:10px;font-weight:700;letter-spacing:0.1em;"
@@ -244,6 +209,19 @@ def render_data_controls():
                 type=["csv", "xlsx", "xls", "parquet", "json", "txt"],
                 label_visibility="collapsed",
             )
+            # Sample file download
+            try:
+                with open(UPLOAD_SAMPLE_PATH, "rb") as f:
+                    sample_bytes = f.read()
+                st.download_button(
+                    label="⬇ Download sample file",
+                    data=sample_bytes,
+                    file_name="sample_portfolio.csv",
+                    mime="text/csv",
+                    use_container_width=True,
+                )
+            except Exception:
+                pass
             portfolio_label = "Custom portfolio"
         else:
             sample_label = st.selectbox(
@@ -258,285 +236,332 @@ def render_data_controls():
                 if sample_label != "— Select a sample portfolio —"
                 else "Sample portfolio"
             )
+            # Portfolio description box
+            desc = PORTFOLIO_DESCRIPTIONS.get(sample_label)
+            if desc:
+                st.info(desc)
 
         st.markdown("---")
-
         benchmark_label = st.selectbox("Benchmark", options=list(BENCHMARKS.keys()))
-        rfr_label = st.selectbox("Risk-Free Rate", options=list(RISK_FREE_RATES.keys()))
-
+        rfr_label       = st.selectbox("Risk-Free Rate", options=list(RISK_FREE_RATES.keys()))
         st.markdown("---")
-
-        # Rolling window also moved here so it's always visible
-        window_label = st.selectbox(
+        window_label    = st.selectbox(
             "Rolling window",
             options=list(ROLLING_WINDOWS.keys()),
+            help=(
+                "The rolling window sets how many trading days are used to estimate "
+                "each point in the rolling regression.\n\n"
+                "**Shorter window** (e.g. 1 year): more reactive — captures recent shifts "
+                "in beta and alpha, but noisier.\n\n"
+                "**Longer window** (e.g. 5 years): smoother and more stable estimates, "
+                "but slower to reflect structural changes in the portfolio."
+            ),
         )
 
     return uploaded_file, benchmark_label, rfr_label, portfolio_label, window_label
 
 
 # =============================================================================
-# SECTION: OVERVIEW
+# SECTION 0 — HEADLINE
 # =============================================================================
 
-def render_overview(df, benchmark_returns, rfr_series, benchmark_label, rfr_label, return_col):
-    col_left, col_right = st.columns(2)
-
-    with col_left:
-        section_label("Cumulative return")
-
-        c1, c2 = st.columns(2)
-        c1.metric("Start date", str(df.index.min().date()))
-        c2.metric("End date", str(df.index.max().date()))
-
-        # ── CHANGE 2: overlay benchmark on the same chart ─────────────────────
-        portfolio_cum = df[[return_col]].mul(100).cumsum()
-        portfolio_cum.columns = ["Portfolio"]
-
-        bm_aligned = benchmark_returns.reindex(df.index).fillna(method="ffill")
-        bm_cum = bm_aligned.mul(100).cumsum().to_frame(name=benchmark_label)
-
-        combined_cum = pd.concat([portfolio_cum, bm_cum], axis=1).dropna()
-
-        fig_portfolio = TimeSeriesPlot(combined_cum, "Cumulative Returns (%)")
-        st.plotly_chart(fig_portfolio, use_container_width=True)
-
-    with col_right:
-        # ── Data Quality minicard ─────────────────────────────────────────────
-        section_label("Data quality")
-
-        market_data = pd.concat([benchmark_returns, rfr_series], axis=1)
-        market_data.columns = [benchmark_label, rfr_label]
-        missing_pct = market_data.reindex(df.index).isna().mean().mul(100).round(1)
-
-        n_obs = len(df)
-        bm_missing = missing_pct[benchmark_label]
-        rfr_missing = missing_pct[rfr_label]
-        date_start = df.index.min().date()
-        date_end = df.index.max().date()
-
-        def _dq_icon(pct):
-            return "✅" if pct < 5 else ("⚠️" if pct < 20 else "🔴")
-
-        def _dq_color(pct):
-            return "#1a7a5e" if pct < 5 else ("#b45309" if pct < 20 else "#991b1b")
-
-        def _dq_bg(pct):
-            return "#f0fdf9" if pct < 5 else ("#fffbeb" if pct < 20 else "#fff1f2")
-
-        overall_ok = bm_missing < 5 and rfr_missing < 5
-        card_icon = "✅" if overall_ok else "⚠️"
-        card_title = "Data looks good" if overall_ok else "Data quality issues detected"
-        card_color = "#1a7a5e" if overall_ok else "#b45309"
-        card_bg = "#f0fdf9" if overall_ok else "#fffbeb"
-        card_border = "#6ee7b7" if overall_ok else "#fcd34d"
-
-        rows_html = f"""
-            <div style='display:flex;justify-content:space-between;align-items:center;
-                        padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.06)'>
-                <span style='font-size:11px;color:#555'>Observations</span>
-                <span style='font-size:12px;font-weight:600;color:#111440'>{n_obs:,}</span>
-            </div>
-            <div style='display:flex;justify-content:space-between;align-items:center;
-                        padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.06)'>
-                <span style='font-size:11px;color:#555'>Date range</span>
-                <span style='font-size:12px;font-weight:600;color:#111440'>{date_start} – {date_end}</span>
-            </div>
-            <div style='display:flex;justify-content:space-between;align-items:center;
-                        padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.06)'>
-                <span style='font-size:11px;color:#555'>{_dq_icon(bm_missing)} Benchmark missing</span>
-                <span style='font-size:12px;font-weight:600;color:{_dq_color(bm_missing)}'>{bm_missing:.1f}%</span>
-            </div>
-            <div style='display:flex;justify-content:space-between;align-items:center;padding:6px 0'>
-                <span style='font-size:11px;color:#555'>{_dq_icon(rfr_missing)} Risk-free rate missing</span>
-                <span style='font-size:12px;font-weight:600;color:{_dq_color(rfr_missing)}'>{rfr_missing:.1f}%</span>
-            </div>
-        """
-
-        st.markdown(f"""
-            <div style='background:{card_bg};border:1px solid {card_border};border-radius:10px;
-                        padding:14px 18px;margin-bottom:16px'>
-                <div style='display:flex;align-items:center;gap:8px;margin-bottom:10px'>
-                    <span style='font-size:16px'>{card_icon}</span>
-                    <span style='font-size:12px;font-weight:700;color:{card_color};
-                                 letter-spacing:0.02em'>{card_title}</span>
-                </div>
-                {rows_html}
-            </div>
-        """, unsafe_allow_html=True)
-
-        # ── Risk & performance metrics ────────────────────────────────────────
-        section_label("Risk & performance")
-
-        portfolio_series = df[return_col]
-        bm_series = benchmark_returns.reindex(df.index).dropna()
-
-        ann_return = portfolio_series.mul(100).mean() * TRADING_DAYS
-        ann_std = portfolio_series.mul(100).std() * np.sqrt(TRADING_DAYS)
-        te = tracking_error(portfolio_series.mul(100), bm_series.mul(100))
-        sharpe = sharpe_ratio(df[[return_col]]) * np.sqrt(TRADING_DAYS)
-        var_95 = value_at_risk(df[[return_col]])
-        es = expected_shortfall(df[[return_col]])
-        md = max_drawdown(df[[return_col]])
-        ced = conditional_expected_drawdown(df[[return_col]])
-
-        # 2 columns × 4 rows — bigger tiles, fills the remaining space
-        c1, c2 = st.columns(2)
-        c1.metric("Annualized return", f"{ann_return:.2f}%")
-        c2.metric("Annualized vol.", f"{ann_std:.2f}%")
-        c1.metric("Sharpe ratio", f"{sharpe:.4f}x")
-        c2.metric("Value at risk (95%)", f"{var_95:.2%}")
-        c1.metric("Expected shortfall", f"{es:.2%}")
-        c2.metric("Tracking error", f"{te:.4f}%")
-        c1.metric("Max drawdown", f"{md:.2%}")
-        c2.metric("Cond. exp. drawdown", f"{ced:.2%}")
-
-
-# =============================================================================
-# SECTION: INTERPRETATION
-# =============================================================================
-
-def render_interpretation(capm_df, capm_risk):
-    """Plain-english interpretation for advisors."""
-
-    alpha_mean = capm_df["alpha"].mean()
-    beta_mean = capm_df["beta"].mean()
-    beta_last = capm_df["beta"].iloc[-1]
+def render_headline(df, capm_risk, capm_df, return_col, benchmark_label, portfolio_label):
+    portfolio_series = df[return_col]
+    ann_return       = portfolio_series.mul(100).mean() * TRADING_DAYS
+    gained           = ann_return >= 0
+    verb             = "gained" if gained else "lost"
+    value_color      = "#5DCAA5" if gained else "#F09595"
+    date_range       = f"{df.index.min().date()} – {df.index.max().date()}"
 
     try:
-        sys_pct = capm_risk.loc["Systematic", "percentage"]
-        idio_pct = capm_risk.loc["Idiosyncratic", "percentage"]
+        sys_pct  = capm_risk.loc["Systematic", "percentage"] * 100
+        idio_pct = capm_risk.loc["Idiosyncratic", "percentage"] * 100
     except KeyError:
-        display = capm_risk.copy()
-        display.index = display.index.str.replace("_", " ").str.title()
-        sys_pct = display.iloc[1]["percentage"]
-        idio_pct = display.iloc[2]["percentage"]
+        tmp = capm_risk.copy()
+        tmp.index = tmp.index.str.replace("_", " ").str.title()
+        sys_pct  = tmp.iloc[1]["percentage"] * 100
+        idio_pct = tmp.iloc[2]["percentage"] * 100
 
-    if alpha_mean > 0:
-        alpha_msg = f"The portfolio has generated **positive alpha** on average ({alpha_mean * 100:.3f}% daily), suggesting the strategy adds value beyond market exposure."
-    else:
-        alpha_msg = f"The portfolio shows **negative alpha** on average ({alpha_mean * 100:.3f}% daily), indicating returns have lagged what market exposure alone would predict."
+    alpha_mean  = capm_df["alpha"].mean()
+    alpha_label = "positive alpha" if alpha_mean > 0 else "negative alpha"
+    alpha_color = "#5DCAA5" if alpha_mean > 0 else "#F09595"
 
-    if beta_mean < 0.8:
-        beta_msg = f"With an average market sensitivity of **{beta_mean:.2f}**, the portfolio is **defensive** — it moves less than the market and may offer downside protection."
-    elif beta_mean <= 1.2:
-        beta_msg = f"With an average market sensitivity of **{beta_mean:.2f}**, the portfolio tracks the market **closely** with similar risk exposure."
-    else:
-        beta_msg = f"With an average market sensitivity of **{beta_mean:.2f}**, the portfolio is **aggressive** — it amplifies market movements and carries higher systematic risk."
-
-    if abs(beta_last - beta_mean) > 0.2:
-        trend_msg = f"Recently, market sensitivity has shifted to **{beta_last:.2f}**, which is notably {'higher' if beta_last > beta_mean else 'lower'} than its historical average."
-    else:
-        trend_msg = f"Current market sensitivity (**{beta_last:.2f}**) is consistent with the historical average — no significant change in posture detected."
-
-    risk_msg = f"**{sys_pct * 100:.1f}%** of total variance comes from broad market exposure, while **{idio_pct * 100:.1f}%** is specific to the strategy."
-
-    section_label("What this means")
-    for msg in [alpha_msg, beta_msg, trend_msg, risk_msg]:
-        html_msg = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', msg)
-        st.markdown(
-            f"<p style='font-size:13px;color:#444;line-height:1.7;margin-bottom:10px'>{html_msg}</p>",
-            unsafe_allow_html=True,
-        )
+    st.markdown(f"""
+        <div style='border-left:4px solid #111440;padding:18px 24px;margin-bottom:8px;
+                    background:#fafbff;border-radius:0 8px 8px 0'>
+            <p style='font-size:10px;font-weight:700;letter-spacing:0.12em;color:#111440;
+                      opacity:0.4;text-transform:uppercase;margin:0 0 10px'>
+                {portfolio_label} &nbsp;·&nbsp; {date_range} &nbsp;·&nbsp; vs. {benchmark_label}
+            </p>
+            <p style='font-size:26px;font-weight:700;color:#111440;line-height:1.35;margin:0'>
+                The portfolio <span style='color:{value_color}'>{verb} {abs(ann_return):.2f}%
+                annualized</span> — {sys_pct:.0f}% from market exposure,
+                {idio_pct:.0f}% from strategy decisions,
+                with <span style='color:{alpha_color}'>{alpha_label}</span>.
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
 
 
 # =============================================================================
-# SECTION: ATTRIBUTION
+# SECTION 1 — MARKET EXPOSURE VS. STRATEGY
 # =============================================================================
 
-def render_attribution(df, benchmark_returns, rfr_series, benchmark_ticker, return_col, window_label):
+def render_insight_1(df, benchmark_returns, capm_df, return_col, benchmark_label):
     divider()
-    section_label("Return decomposition")
 
-    # Rolling window now comes from the sidebar; only the coef selector stays here
-    coef = st.selectbox(
-        "View",
-        options=["Market sensitivity (Beta)", "Alpha over time", "Residual risk (Sigma)"],
-        index=0,
-    )
-
-    window = ROLLING_WINDOWS[window_label]
     portfolio_series = df[return_col]
+    ann_return       = portfolio_series.mul(100).mean() * TRADING_DAYS
 
-    capm_df = get_rolling_capm(
-        portfolio_series, benchmark_returns, rfr_series, window,
-    )
-
-    capm_risk = capm_risk_attribution(portfolio_series, benchmark_returns, rfr_series)
-    capm_risk_clean = capm_risk.copy()
-    capm_risk["ann_volatility"] = np.sqrt(capm_risk["variance"]) * np.sqrt(TRADING_DAYS) / 100
-
-    col_left, col_right = st.columns(2)
-
-    with col_left:
-        if "Beta" in coef:
-            series_to_plot = capm_df["beta"]
-            chart_title = "Market sensitivity over time"
-        elif "Alpha" in coef:
-            series_to_plot = capm_df["alpha"].cumsum()
-            chart_title = "Cumulative alpha (%)"
-        else:
-            series_to_plot = capm_df["sigma"]
-            chart_title = "Residual risk over time"
-
-        fig_coef = TimeSeriesPlot(series_to_plot, chart_title)
-        st.plotly_chart(fig_coef, use_container_width=True)
-
-        section_label("Where the risk comes from")
-
-        # ── CHANGE 5: drop variance column from risk decomposition table ──────
-        display = capm_risk.copy()
-        display = display.drop(columns=["variance"], errors="ignore")
-        display.index = (
-            display.index
-            .str.replace("total_variance", "Total portfolio")
-            .str.replace("systematic_variance", "Market exposure")
-            .str.replace("idio_variance", "Strategy-specific")
-        )
-
-        st.dataframe(
-            display.style
-            .format({
-                "percentage": "{:.2%}",
-                "ann_volatility": "{:.2%}",
-            })
-            .bar(subset=["percentage"], color="#111440", vmin=0, vmax=1)
-            .background_gradient(subset=["ann_volatility"], cmap="Blues"),
-            use_container_width=True,
-            column_config={
-                "percentage": st.column_config.NumberColumn("Share of risk"),
-                "ann_volatility": st.column_config.NumberColumn("Annualized vol."),
-            },
-        )
-
-    with col_right:
-        r_i = portfolio_series.reindex(capm_df.index).dropna()
-        r_m = benchmark_returns.reindex(capm_df.index).dropna()
+    try:
+        r_i  = portfolio_series.reindex(capm_df.index).dropna()
+        r_m  = benchmark_returns.reindex(capm_df.index).dropna()
         beta = capm_df["beta"]
-
         contribution = factor_contribution(r_i, r_m, beta)
         contribution = pd.concat([r_i, contribution], axis=1)
         contribution.columns = ["Total portfolio", "Market exposure", "Strategy alpha"]
+        has_contrib = True
+    except Exception:
+        has_contrib = False
 
-        fig_contrib = TimeSeriesPlot(
-            contribution.mul(100).cumsum(),
-            "What drove the return — cumulative (%)",
+    # ── Insight text ──────────────────────────────────────────────────────────
+    if has_contrib:
+        excess_ann = (contribution["Market exposure"] + contribution["Strategy alpha"]).mean() * TRADING_DAYS * 100
+        mkt_ann    = contribution["Market exposure"].mean() * TRADING_DAYS * 100
+        alpha_ann  = contribution["Strategy alpha"].mean() * TRADING_DAYS * 100
+        direction  = "added" if alpha_ann >= 0 else "detracted"
+        insight = (
+            f"Of the {excess_ann:.2f}% annualized excess return, market beta contributed "
+            f"<strong>{mkt_ann:.2f}%</strong> while strategy decisions "
+            f"<strong>{direction} {abs(alpha_ann):.2f}%</strong>."
         )
-        st.plotly_chart(fig_contrib, use_container_width=True)
+    else:
+        insight = "Return decomposition between market exposure and strategy alpha."
 
-        render_interpretation(capm_df, capm_risk_clean)
+    col_text, col_chart = st.columns([3, 5])
+
+    with col_text:
+        st.markdown(f"""
+            <div>
+                <p style='font-size:20px;font-weight:700;letter-spacing:0.12em;
+                          color:#111440;opacity:0.4;text-transform:uppercase;margin:0 0 6px'>
+                    01 · Market exposure vs. strategy
+                </p>
+                <p style='font-size:22px;font-weight:600;color:#111440;line-height:1.55;margin:0 0 16px'>
+                    {insight}
+                </p>
+                <p style='font-size:15px;color:#888;line-height:1.7;margin:0'>
+                    Cumulative return decomposed into the portion explained by broad market
+                    movement (beta × benchmark return) and the residual attributed to
+                    strategy-specific decisions (alpha).
+                </p>
+            </div>
+        """, unsafe_allow_html=True)
+
+    with col_chart:
+        if has_contrib:
+            fig = TimeSeriesPlot(
+                contribution.mul(100).cumsum(),
+                "Cumulative return decomposition (%)",
+            )
+            st.plotly_chart(fig, use_container_width=True)
 
 
 # =============================================================================
-# PAGES
+# SECTION 2 — MARKET SENSITIVITY (BETA)
+# =============================================================================
+
+def render_insight_2(capm_df):
+    divider()
+
+    beta_mean = capm_df["beta"].mean()
+    beta_last = capm_df["beta"].iloc[-1]
+    delta     = beta_last - beta_mean
+
+    if beta_mean < 0.8:
+        character = "defensive"
+        char_desc = "moves less than the market and may offer downside protection"
+    elif beta_mean <= 1.2:
+        character = "market-neutral"
+        char_desc = "tracks broad market movements closely"
+    else:
+        character = "aggressive"
+        char_desc = "amplifies market swings and carries elevated systematic risk"
+
+    if abs(delta) > 0.2:
+        shift = (
+            f"Recently it has shifted to <strong>{beta_last:.2f}</strong> — "
+            f"{'higher' if delta > 0 else 'lower'} than its historical average."
+        )
+    else:
+        shift = f"Current sensitivity (<strong>{beta_last:.2f}</strong>) is consistent with its historical average."
+
+    insight = (
+        f"With an average beta of <strong>{beta_mean:.2f}</strong>, the portfolio is "
+        f"<strong>{character}</strong> — it {char_desc}. {shift}"
+    )
+
+    col_chart, col_text = st.columns([4, 3])
+
+    with col_text:
+        st.markdown(f"""
+            <div>
+                <p style='font-size:20px;font-weight:700;letter-spacing:0.12em;
+                          color:#111440;opacity:0.4;text-transform:uppercase;margin:0 0 6px'>
+                    02 · Market sensitivity (Beta)
+                </p>
+                <p style='font-size:22px;font-weight:600;color:#111440;line-height:1.55;margin:0 0 16px'>
+                    {insight}
+                </p>
+                <p style='font-size:15px;color:#888;line-height:1.7;margin:0'>
+                    Rolling beta measures how much the portfolio moves relative to the benchmark
+                    over time. A beta of 1 means the portfolio moves in lockstep; below 1 is
+                    more defensive, above 1 more aggressive.
+                </p>
+            </div>
+        """, unsafe_allow_html=True)
+
+    with col_chart:
+        fig = TimeSeriesPlot(capm_df["beta"], "Rolling market sensitivity (Beta)")
+        st.plotly_chart(fig, use_container_width=True)
+
+
+# =============================================================================
+# SECTION 3 — ALPHA CONSISTENCY
+# =============================================================================
+
+def render_insight_3(capm_df):
+    divider()
+
+    alpha_cum  = capm_df["alpha"].cumsum()
+    alpha_mean = capm_df["alpha"].mean() * 252
+    alpha_std  = capm_df["alpha"].std() * np.sqrt(252)
+    pos_pct    = (capm_df["alpha"] > 0).mean() * 100
+
+    if alpha_mean > 0 and pos_pct > 55:
+        verdict = "consistently generated positive alpha"
+        verdict_color = "#1a7a5e"
+    elif alpha_mean > 0:
+        verdict = "generated positive alpha on balance, though inconsistently"
+        verdict_color = "#b45309"
+    elif alpha_mean < 0 and pos_pct < 45:
+        verdict = "consistently destroyed alpha relative to the benchmark"
+        verdict_color = "#991b1b"
+    else:
+        verdict = "produced mixed alpha — positive in some periods, negative in others"
+        verdict_color = "#b45309"
+
+    insight = (
+        f"The strategy <strong style='color:{verdict_color}'>{verdict}</strong>. "
+        f"Alpha was positive in <strong>{pos_pct:.0f}%</strong> of rolling windows, "
+        f"with an annualized average of <strong>{alpha_mean*100:.3f}%</strong> "
+        f"and an annualized volatility of {alpha_std*100:.3f}%."
+    )
+
+    col_text, col_chart = st.columns([3, 4])
+
+    with col_text:
+        st.markdown(f"""
+            <div>
+                <p style='font-size:20px;font-weight:700;letter-spacing:0.12em;
+                          color:#111440;opacity:0.4;text-transform:uppercase;margin:0 0 6px'>
+                    03 · Alpha consistency
+                </p>
+                <p style='font-size:22px;font-weight:600;color:#111440;line-height:1.55;margin:0 0 16px'>
+                    {insight}
+                </p>
+                <p style='font-size:15px;color:#888;line-height:1.7;margin:0'>
+                    Cumulative alpha shows whether outperformance was structural or episodic.
+                    A steadily rising line indicates a robust strategy; a flat or declining
+                    line suggests returns were driven primarily by market exposure.
+                </p>
+            </div>
+        """, unsafe_allow_html=True)
+
+    with col_chart:
+        fig = TimeSeriesPlot(alpha_cum.mul(100), "Cumulative alpha (%)")
+        st.plotly_chart(fig, use_container_width=True)
+
+
+# =============================================================================
+# APPENDIX — RISK METRICS + CUMULATIVE RETURN
+# =============================================================================
+
+def render_appendix(df, benchmark_returns, rfr_series, benchmark_label, rfr_label, return_col):
+    divider()
+    section_tag("04 · Risk metrics & cumulative return")
+
+    col_left, col_right = st.columns(2)
+
+    with col_right:
+        # Geometric cumulative return (exp(cumsum of log returns) - 1) * 100
+        portfolio_cum = (np.expm1(df[return_col].cumsum()) * 100).to_frame(name="Portfolio")
+        bm_aligned    = benchmark_returns.reindex(df.index).ffill()
+        bm_cum        = (np.expm1(bm_aligned.cumsum()) * 100).to_frame(name=benchmark_label)
+        combined      = pd.concat([portfolio_cum, bm_cum], axis=1).dropna()
+
+        fig = TimeSeriesPlot(combined, "Cumulative return (%) — geometric")
+        st.plotly_chart(fig, use_container_width=True)
+
+    METRIC_HELP = {
+        "Annualized return":   "Average daily return scaled to a full year (×252 trading days). Positive means the portfolio grew on average.",
+        "Annualized vol.":     "Standard deviation of daily returns scaled to a year. Higher vol. = wider swings up and down.",
+        "Sharpe ratio":        "Excess return per unit of total risk (return − risk-free rate) ÷ volatility. Higher is better; >1 is generally considered good.",
+        "Value at risk (95%)": "The worst expected daily loss 95% of the time. E.g. −1.5% means on most days losses won't exceed 1.5%.",
+        "Expected shortfall":  "Average loss on the worst 5% of days (also called CVaR). A more conservative tail-risk measure than VaR.",
+        "Max drawdown":        "Largest peak-to-trough decline in the portfolio's history. Measures the worst cumulative loss an investor could have experienced.",
+        "Tracking error":      "Annualized standard deviation of the difference between portfolio and benchmark returns. Lower = closer to the benchmark.",
+        "Cond. exp. drawdown": "Average of the worst drawdowns (conditional expected drawdown). Captures sustained loss periods, not just the single worst one.",
+    }
+
+    with col_left:
+        portfolio_series = df[return_col]
+        bm_series        = benchmark_returns.reindex(df.index).dropna()
+
+        ann_return = portfolio_series.mul(100).mean() * TRADING_DAYS
+        ann_std    = portfolio_series.mul(100).std() * np.sqrt(TRADING_DAYS)
+        te         = tracking_error(portfolio_series.mul(100), bm_series.mul(100))
+        sharpe     = sharpe_ratio(df[[return_col]]) * np.sqrt(TRADING_DAYS)
+        var_95     = value_at_risk(df[[return_col]])
+        es         = expected_shortfall(df[[return_col]])
+        md         = max_drawdown(df[[return_col]])
+        ced        = conditional_expected_drawdown(df[[return_col]])
+
+        c1, c2 = st.columns(2)
+        c1.metric("Annualized return",   f"{ann_return:.2f}%",  help=METRIC_HELP["Annualized return"])
+        c2.metric("Annualized vol.",     f"{ann_std:.2f}%",     help=METRIC_HELP["Annualized vol."])
+        c1.metric("Sharpe ratio",        f"{sharpe:.4f}x",      help=METRIC_HELP["Sharpe ratio"])
+        c2.metric("Value at risk (95%)", f"{var_95:.2%}",       help=METRIC_HELP["Value at risk (95%)"])
+        c1.metric("Expected shortfall",  f"{es:.2%}",           help=METRIC_HELP["Expected shortfall"])
+        c2.metric("Tracking error",      f"{te:.4f}%",          help=METRIC_HELP["Tracking error"])
+        c1.metric("Max drawdown",        f"{md:.2%}",           help=METRIC_HELP["Max drawdown"])
+        c2.metric("Cond. exp. drawdown", f"{ced:.2%}",          help=METRIC_HELP["Cond. exp. drawdown"])
+
+        # Data quality warning if needed
+        market_data = pd.concat([benchmark_returns, rfr_series], axis=1)
+        market_data.columns = [benchmark_label, rfr_label]
+        missing_pct = market_data.reindex(df.index).isna().mean().mul(100).round(1)
+        if missing_pct.max() > 20:
+            st.warning(
+                f"⚠️ Up to {missing_pct.max():.1f}% of market data could not be aligned "
+                "to your portfolio dates. Results may be affected."
+            )
+
+
+# =============================================================================
+# PAGE
 # =============================================================================
 
 def page_portfolio_attribution():
-    # render_data_controls now returns window_label as well
-    uploaded_file, benchmark_label, rfr_label, portfolio_label, window_label = render_data_controls()
+    uploaded_file, benchmark_label, rfr_label, portfolio_label, window_label = render_sidebar()
 
     if not uploaded_file:
-        st.info("👆 Upload a returns file or select a sample portfolio in the sidebar to get started.")
+        st.markdown(
+            "<div style='margin-top:80px;text-align:center;color:#aaa;font-size:14px'>"
+            "👈 Upload a returns file or select a sample portfolio in the sidebar."
+            "</div>",
+            unsafe_allow_html=True,
+        )
         return
 
     df_raw = load_file(uploaded_file)
@@ -561,7 +586,8 @@ def page_portfolio_attribution():
         )
 
     benchmark_ticker = BENCHMARKS[benchmark_label]
-    rfr_ticker = RISK_FREE_RATES[rfr_label]
+    rfr_ticker       = RISK_FREE_RATES[rfr_label]
+    window           = ROLLING_WINDOWS[window_label]
 
     benchmark_returns = get_benchmark_returns(
         benchmark_ticker,
@@ -574,22 +600,23 @@ def page_portfolio_attribution():
         end_date=df.index.max().date(),
     )
 
-    # ── Compute CAPM early for hero summary ───────────────────────────────────
-    capm_df_preview = get_rolling_capm(
-        df[return_col], benchmark_returns, rfr_series, window=252,
-    )
-    capm_risk_preview = capm_risk_attribution(df[return_col], benchmark_returns, rfr_series)
-    capm_risk_display = capm_risk_preview.copy()
-    capm_risk_display.index = (
-        capm_risk_display.index
-        .str.replace("total_variance", "Total portfolio")
+    capm_df = get_rolling_capm(df[return_col], benchmark_returns, rfr_series, window)
+
+    capm_risk = capm_risk_attribution(df[return_col], benchmark_returns, rfr_series)
+    capm_risk_labeled = capm_risk.copy()
+    capm_risk_labeled.index = (
+        capm_risk_labeled.index
+        .str.replace("total_variance",      "Total portfolio")
         .str.replace("systematic_variance", "Systematic")
-        .str.replace("idio_variance", "Idiosyncratic")
+        .str.replace("idio_variance",       "Idiosyncratic")
     )
 
-    render_hero_summary(df, capm_risk_display, capm_df_preview, return_col, benchmark_label, portfolio_label)
-    render_overview(df, benchmark_returns, rfr_series, benchmark_label, rfr_label, return_col)
-    render_attribution(df, benchmark_returns, rfr_series, benchmark_ticker, return_col, window_label)
+    # ── Narrative flow ────────────────────────────────────────────────────────
+    render_headline(df, capm_risk_labeled, capm_df, return_col, benchmark_label, portfolio_label)
+    render_insight_1(df, benchmark_returns, capm_df, return_col, benchmark_label)
+    render_insight_2(capm_df)
+    render_insight_3(capm_df)
+    render_appendix(df, benchmark_returns, rfr_series, benchmark_label, rfr_label, return_col)
 
 
 def page_multifactor_attribution():
@@ -646,13 +673,12 @@ st.markdown("""
 st.markdown("<div style='margin-top:1rem'></div>", unsafe_allow_html=True)
 st.markdown("<div style='margin-top:1rem'></div>", unsafe_allow_html=True)
 st.markdown("<div style='margin-top:1rem'></div>", unsafe_allow_html=True)
-
 st.markdown("""
     <div style='background:#111440;padding:12px 28px;display:flex;align-items:center;
                 justify-content:space-between;margin-bottom:24px'>
         <div style='color:#fff;font-size:14px;font-weight:600;letter-spacing:0.02em'>
             CAPM Attribution
-            <span style='opacity:0.4;font-weight:400;margin-left:6px;font-size:12px'>· Attribution</span>
+            <span style='opacity:0.4;font-weight:400;margin-left:6px;font-size:12px'>· Research View</span>
         </div>
         <div style='display:flex;flex-direction:column;gap:3px;align-items:flex-end'>
             <a href='https://www.linkedin.com/in/danielrbarrera/' target='_blank'
