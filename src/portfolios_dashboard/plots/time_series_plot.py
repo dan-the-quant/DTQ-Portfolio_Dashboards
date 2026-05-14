@@ -61,7 +61,7 @@ DTQ_LAYOUT = dict(
 def TimeSeriesPlot(
         data,
         title: str = "Time Series",
-        height: int = 420,
+        height: int = 350,
 ):
     if isinstance(data, pd.Series):
         df = data.to_frame(name=data.name or "Value")

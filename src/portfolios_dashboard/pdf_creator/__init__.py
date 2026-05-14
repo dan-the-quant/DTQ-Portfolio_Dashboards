@@ -1,0 +1,1 @@
+from src.portfolios_dashboard.pdf_creator.generate_pdf import generate_pdf
