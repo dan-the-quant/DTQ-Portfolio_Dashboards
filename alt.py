@@ -338,7 +338,7 @@ def render_insight_1(df, benchmark_returns, capm_df, return_col, benchmark_label
     else:
         insight = "Return decomposition between market exposure and strategy alpha."
 
-    col_text, col_chart = st.columns([3, 4])
+    col_text, col_chart = st.columns([3, 5])
 
     with col_text:
         st.markdown(f"""
