@@ -100,4 +100,17 @@ def TimeSeriesPlot(
         height=height,
     )
 
+    # COVID-19 shaded band — only if the data covers that period
+    covid_start = pd.Timestamp("2020-02-19")
+    covid_end   = pd.Timestamp("2020-06-30")
+    if df.index.min() <= covid_end and df.index.max() >= covid_start:
+        fig.add_vrect(
+            x0=covid_start, x1=covid_end,
+            fillcolor="rgba(180, 83, 9, 0.08)",
+            layer="below", line_width=0,
+            annotation_text="COVID-19",
+            annotation_position="top left",
+            annotation_font=dict(size=9, color="#b45309"),
+        )
+
     return fig
