@@ -26,15 +26,13 @@ def residuals(
 
 
 # Helper: Calculate Sigma
-def sigma(
-        X,
-        Y,
-        coef,
-):
+def sigma(X, Y, coef):
     if X.shape[0] <= X.shape[1]:
-        raise ValueError("n must be greater than k to calculate sigma.")
-
+        raise ValueError(
+            f"Insufficient observations for regression: "
+            f"n={X.shape[0]}, k={X.shape[1]}. "
+            f"Check that the portfolio and benchmark have overlapping dates."
+        )
     errors = residuals(X, Y, coef)
     std = np.sqrt(np.sum(errors ** 2, axis=0) / (X.shape[0] - X.shape[1]))
-
     return std

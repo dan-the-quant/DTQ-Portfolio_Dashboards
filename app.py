@@ -7,7 +7,6 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 from streamlit_option_menu import option_menu
-import re
 
 from src.portfolios_dashboard.data import (
     load_file,
@@ -37,7 +36,7 @@ from src.portfolios_dashboard.risk_measures import (
 
 SAMPLE_PORTFOLIOS = {
     "— Select a sample portfolio —": None,
-    "Betting-Against-Beta": r"config/betting_against_beta_portfolio.csv",
+    "Betting-Against-Beta":  r"config/betting_against_beta_portfolio.csv",
     "Equal-Weighted":        r"config/equal_weighted_portfolio.csv",
     "Mean-Variance":         r"config/mean_variance_portfolio.csv",
     "Momentum":              r"config/momentum_portfolio.csv",
@@ -230,7 +229,9 @@ def render_sidebar():
                 label_visibility="collapsed",
             )
             sample_path = SAMPLE_PORTFOLIOS[sample_label]
+
             uploaded_file = open(sample_path, "rb") if sample_path else None
+
             portfolio_label = (
                 sample_label
                 if sample_label != "— Select a sample portfolio —"
