@@ -595,11 +595,22 @@ def page_portfolio_attribution():
         start_date=df.index.min().date(),
         end_date=df.index.max().date(),
     )
+
+    if benchmark_returns is None or len(benchmark_returns) == 0:
+        st.error(
+            "⚠️ Could not download benchmark data. yfinance may be rate-limited — please try again in a few minutes.")
+        st.stop()
+
     rfr_series = get_risk_free_rate(
         rfr_ticker,
         start_date=df.index.min().date(),
         end_date=df.index.max().date(),
     )
+
+    if rfr_series is None or len(rfr_series) == 0:
+        st.error(
+            "⚠️ Could not download risk-free rate data. yfinance may be rate-limited — please try again in a few minutes.")
+        st.stop()
 
     capm_df = get_rolling_capm(df[return_col], benchmark_returns, rfr_series, window)
 
